@@ -1,63 +1,51 @@
-name: Build TV-HOME Remote (Theos armv7 experiment)
+name: Build iOS 10 armv7 App via Theos
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  theos-build:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install Linux dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git make perl clang ldid dpkg-dev             build-essential libtool autoconf automake pkg-config
+          sudo apt-get install -y build-essential git perl curl rsync ccache unzip xz-utils fakeroot libio-compress-lzma-perl libtinfo6
 
       - name: Install Theos
+        env:
+          CI: true
         run: |
-          git clone --recursive https://github.com/theos/theos.git "$HOME/theos"
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
           echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
           echo "$HOME/theos/bin" >> "$GITHUB_PATH"
 
-      - name: Fetch Theos SDK collection
+      - name: Verify Theos toolchain and SDKs
         run: |
-          git clone --depth=1 https://github.com/theos/sdks.git "$HOME/theos/sdks"
-          ls -la "$HOME/theos/sdks" | head -50
-
-      - name: Diagnose available toolchain and SDKs
-        run: |
+          set -eux
           echo "THEOS=$THEOS"
-          find "$THEOS/toolchain" -maxdepth 3 -type f 2>/dev/null | head -100 || true
-          find "$THEOS/sdks" -maxdepth 2 -type d | head -100 || true
-          clang --version
-          make --version
+          test -x "$THEOS/toolchain/linux/iphone/bin/clang"
+          "$THEOS/toolchain/linux/iphone/bin/clang" --version
+          find "$THEOS/sdks" -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort
 
-      - name: Attempt armv7 package build
-        id: build
-        continue-on-error: true
+      - name: Build package
         run: |
-          set -o pipefail
-          export THEOS="$HOME/theos"
-          make clean package FINALPACKAGE=1 2>&1 | tee theos-build.log
+          set -eux
+          make clean
+          make package FINALPACKAGE=1
 
-      - name: Collect diagnostics
-        if: always()
+      - name: Show generated packages
         run: |
-          {
-            echo "=== Repository ==="
-            find . -maxdepth 3 -type f | sort
-            echo "=== Packages ==="
-            find . -path "*/packages/*" -type f -print || true
-          } >> theos-build.log
+          find packages -maxdepth 1 -type f -print -exec file {} \; || true
 
-      - name: Upload build result and logs
-        if: always()
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: theos-armv7-experiment
-          path: |
-            theos-build.log
-            packages/**/*.deb
-          if-no-files-found: warn
+          name: TVRemote-deb-package
+          path: packages/*.deb
+          if-no-files-found: error
