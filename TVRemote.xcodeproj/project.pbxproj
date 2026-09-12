@@ -1,0 +1,10 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 46;
+ objects = {
+  /* Minimal project placeholder. Generated project settings will be expanded for legacy armv7 builds. */
+ };
+ rootObject = 000000000000000000000001;
+}
