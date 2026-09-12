@@ -1,42 +1,63 @@
-name: Build iOS Controller
+name: Build TV-HOME Remote (Theos armv7 experiment)
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  build-experiment:
-    runs-on: macos-latest
+  theos-build:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show toolchain
+      - name: Install Linux dependencies
         run: |
-          sw_vers
-          xcodebuild -version
-          xcodebuild -showsdks
+          sudo apt-get update
+          sudo apt-get install -y git make perl clang ldid dpkg-dev             build-essential libtool autoconf automake pkg-config
 
-      - name: Validate project
+      - name: Install Theos
         run: |
-          plutil -lint TVRemote/Info.plist
-          xcodebuild -project TVRemote.xcodeproj -list
+          git clone --recursive https://github.com/theos/theos.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          echo "$HOME/theos/bin" >> "$GITHUB_PATH"
 
-      - name: Attempt modern iOS build
+      - name: Fetch Theos SDK collection
+        run: |
+          git clone --depth=1 https://github.com/theos/sdks.git "$HOME/theos/sdks"
+          ls -la "$HOME/theos/sdks" | head -50
+
+      - name: Diagnose available toolchain and SDKs
+        run: |
+          echo "THEOS=$THEOS"
+          find "$THEOS/toolchain" -maxdepth 3 -type f 2>/dev/null | head -100 || true
+          find "$THEOS/sdks" -maxdepth 2 -type d | head -100 || true
+          clang --version
+          make --version
+
+      - name: Attempt armv7 package build
+        id: build
         continue-on-error: true
         run: |
           set -o pipefail
-          xcodebuild \
-            -project TVRemote.xcodeproj \
-            -scheme TVRemote \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO \
-            build | tee build.log
+          export THEOS="$HOME/theos"
+          make clean package FINALPACKAGE=1 2>&1 | tee theos-build.log
 
-      - name: Upload build log
+      - name: Collect diagnostics
+        if: always()
+        run: |
+          {
+            echo "=== Repository ==="
+            find . -maxdepth 3 -type f | sort
+            echo "=== Packages ==="
+            find . -path "*/packages/*" -type f -print || true
+          } >> theos-build.log
+
+      - name: Upload build result and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xcode-build-log
-          path: build.log
+          name: theos-armv7-experiment
+          path: |
+            theos-build.log
+            packages/**/*.deb
           if-no-files-found: warn
