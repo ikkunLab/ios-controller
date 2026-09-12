@@ -21,9 +21,11 @@ jobs:
         run: |
           set -eux
           mkdir -p TVRemote/Resources
+          rsvg-convert -w 57 -h 57 TVRemote/Resources/tvhome-icon.svg -o TVRemote/Resources/Icon.png
+          rsvg-convert -w 114 -h 114 TVRemote/Resources/tvhome-icon.svg -o TVRemote/Resources/Icon@2x.png
           rsvg-convert -w 114 -h 114 TVRemote/Resources/tvhome-icon.svg -o TVRemote/Resources/Icon-57.png
           rsvg-convert -w 120 -h 120 TVRemote/Resources/tvhome-icon.svg -o TVRemote/Resources/Icon-60.png
-          file TVRemote/Resources/Icon-57.png TVRemote/Resources/Icon-60.png
+          file TVRemote/Resources/Icon.png TVRemote/Resources/Icon@2x.png TVRemote/Resources/Icon-57.png TVRemote/Resources/Icon-60.png
 
       - name: Install Theos
         env:
