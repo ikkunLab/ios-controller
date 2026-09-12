@@ -13,5 +13,8 @@ TVRemote_FILES = \
 TVRemote_FRAMEWORKS = UIKit Foundation CoreGraphics
 TVRemote_CFLAGS = -fobjc-arc
 TVRemote_INSTALL_PATH = /Applications
+TVRemote_RESOURCE_FILES = \
+    TVRemote/Resources/Icon-57.png \
+    TVRemote/Resources/Icon-60.png
 
 include $(THEOS_MAKE_PATH)/application.mk
