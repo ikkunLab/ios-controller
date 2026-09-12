@@ -1,0 +1,20 @@
+name: Build iOS Controller
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  source-check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Check Objective-C source
+        run: |
+          test -f TVRemote/main.m
+          test -f TVRemote/TVRemoteAppDelegate.m
+          test -f TVRemote/TVRemoteViewController.m
+          plutil -lint TVRemote/Info.plist
+          echo "Source skeleton is ready"
