@@ -53,9 +53,30 @@ jobs:
         run: |
           find packages -maxdepth 1 -type f -print -exec file {} \; || true
 
-      - name: Upload artifact
+      - name: Build IPA from application bundle
+        run: |
+          set -eux
+          APP_PATH="$(find .theos/obj -type d -name 'TVRemote.app' -print -quit)"
+          test -n "$APP_PATH"
+          test -f "$APP_PATH/Info.plist"
+          mkdir -p ipa/Payload
+          cp -R "$APP_PATH" ipa/Payload/TVRemote.app
+          cd ipa
+          zip -r ../TVRemote-iOS10-armv7.ipa Payload
+          cd ..
+          file TVRemote-iOS10-armv7.ipa
+          unzip -l TVRemote-iOS10-armv7.ipa
+
+      - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
         with:
           name: TVRemote-deb-package
           path: packages/*.deb
+          if-no-files-found: error
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVRemote-IPA-iOS10-armv7
+          path: TVRemote-iOS10-armv7.ipa
           if-no-files-found: error
