@@ -1,0 +1,8 @@
+Package: com.ikkunlab.tvremote
+Name: TV-HOME Remote
+Version: 0.1.0
+Architecture: iphoneos-arm
+Description: Remote control for TV-HOME
+Maintainer: ikkunLab
+Author: ikkunLab
+Section: Applications
