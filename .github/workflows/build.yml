@@ -5,16 +5,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  source-check:
+  build-experiment:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show Xcode version
-        run: xcodebuild -version
-      - name: Check Objective-C source
+
+      - name: Show toolchain
         run: |
-          test -f TVRemote/main.m
-          test -f TVRemote/TVRemoteAppDelegate.m
-          test -f TVRemote/TVRemoteViewController.m
+          sw_vers
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Validate project
+        run: |
           plutil -lint TVRemote/Info.plist
-          echo "Source skeleton is ready"
+          xcodebuild -project TVRemote.xcodeproj -list
+
+      - name: Attempt modern iOS build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project TVRemote.xcodeproj \
+            -scheme TVRemote \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-build-log
+          path: build.log
+          if-no-files-found: warn
